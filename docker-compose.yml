@@ -14,19 +14,19 @@ services:
       replicas: 1
       placement:
         constraints:
-          - "engine.labels.access == temp"
-          - "engine.labels.access != consul"
+          - "node.labels.access == temp"
+          - "node.labels.access != consul"
     environment:
       - "CONSUL_LOCAL_CONFIG={\"disable_update_check\": true}"
       - "CONSUL_BIND_INTERFACE=eth0"
     entrypoint:
       - timeout     #this seed fires up the cluster after which it is no longer needed
       - -sTERM      #this is the same signal as docker would send on a scale down / stop
-      - -t300       #terminate after 5 mins
+      - -t10        #terminate after 5 mins
       - consul
       - agent
       - -server
-      - -bootstrap-expect=5
+      - -bootstrap-expect=3
       - -data-dir=/tmp/consuldata
       - -bind={{ GetInterfaceIP "eth0" }}
     networks:
@@ -40,8 +40,8 @@ services:
       mode: global                                      ##this will deploy to all nodes that
       placement:
         constraints:
-          - "engine.labels.access == consul"            ##have the consul label
-          - "engine.labels.access != temp"
+          - "node.labels.access == consul"            ##have the consul label
+          - "node.labels.access != temp"
     environment:
       - "CONSUL_LOCAL_CONFIG={\"disable_update_check\": true}"
       - "CONSUL_BIND_INTERFACE=eth0"
@@ -51,7 +51,7 @@ services:
       - agent
       - -server
       - -data-dir=/tmp/consuldata
-      - -bind={{ GetInterfaceIP "eth0" }}
+      - -bind={{ GetInterfaceIP "eth2" }}
       - -client=0.0.0.0
       - -retry-join=seed:8301
       - -ui                                              ##assuming you want the UI on
@@ -64,3 +64,6 @@ services:
 networks:
   consul:
     driver: overlay
+    ipam:
+      config:
+        - subnet: 10.254.0.0/16
